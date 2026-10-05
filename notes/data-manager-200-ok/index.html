@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>200 OK, Then Rejected</title>
+<meta property="og:title" content="Google said 200 OK. An hour later it rejected all of them.">
+<meta property="og:type" content="article">
+<meta name="description" content="A live test of Google's Data Manager API: offline conversion uploads accepted with 200 OK, then rejected about an hour later.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: a lab notebook entry. One column of prose; evidence (tables, raw responses) set as ledger sheets. */
+:root {
+  --paper: #eef2ee; --sheet: #f8faf7; --ink: #142019; --ink-soft: #4a5a51; --rule: #c9d3cb;
+  --mark: #f3e35a; --mark-ink: #1d1a05; --ok: #1f7a4d; --bad: #c2412d; --wait: #8a6d12; --focus: #1d5fd6;
+  --f-display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --s-2: .5rem; --s-3: .75rem; --s-4: 1rem; --s-5: 1.5rem; --s-6: 2rem; --s-7: 3rem;
+  --t-xs: .78rem; --t-sm: .9rem; --t-md: 1.05rem; --t-lg: 1.25rem; --t-xl: clamp(1.45rem, 2.8vw, 1.9rem); --t-hero: clamp(2.2rem, 5.6vw, 3.8rem);
+  --radius: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --paper: #0f1612; --sheet: #151e19; --ink: #e2eae4; --ink-soft: #9aaba1; --rule: #2a3830; --mark: #d8c53a; --mark-ink: #15130a; --ok: #4cc28a; --bad: #f07a63; --wait: #d9b54a; --focus: #7ea7ff; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --paper: #0f1612; --sheet: #151e19; --ink: #e2eae4; --ink-soft: #9aaba1; --rule: #2a3830; --mark: #d8c53a; --mark-ink: #15130a; --ok: #4cc28a; --bad: #f07a63; --wait: #d9b54a; --focus: #7ea7ff; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font: 400 var(--t-md)/1.65 var(--f-body); margin: 0; }
+.wrap { max-width: 46rem; margin-inline: auto; padding-inline: max(16px, 4vw); padding-block: var(--s-6) var(--s-7); }
+a { color: inherit; text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+h1, h2 { font-family: var(--f-display); font-stretch: 78%; font-weight: 750; line-height: 1.04; letter-spacing: -.01em; text-wrap: balance; margin: 0; }
+h1 { font-size: var(--t-hero); }
+h2 { font-size: var(--t-xl); margin-top: var(--s-7); }
+p, ul, ol { margin: var(--s-4) 0 0; }
+li + li { margin-top: var(--s-2); }
+.eyebrow { font: 600 var(--t-xs)/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
+.meta { font: 400 var(--t-sm)/1.5 var(--f-mono); color: var(--ink-soft); margin-top: var(--s-4); }
+.lede { font-size: var(--t-lg); line-height: 1.5; color: var(--ink-soft); margin-top: var(--s-5); }
+.mark { background: linear-gradient(transparent 12%, var(--mark) 12%, var(--mark) 88%, transparent 88%); color: var(--mark-ink); padding-inline: .12em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+code { font: 500 .88em var(--f-mono); overflow-wrap: anywhere; }
+.num { font-variant-numeric: tabular-nums; }
+
+.takeaways { margin-top: var(--s-6); border-top: 2px solid var(--ink); border-bottom: 1px solid var(--rule); padding-block: var(--s-4) var(--s-5); }
+.takeaways ol { padding-left: 1.3rem; }
+.takeaways li::marker { font-family: var(--f-mono); font-weight: 600; }
+
+.sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius); margin-top: var(--s-5); overflow: hidden; }
+.sheet .cap { padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--rule); font: 600 var(--t-xs)/1.4 var(--f-mono); color: var(--ink-soft); display: flex; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font: 400 var(--t-xs)/1.45 var(--f-mono); font-variant-numeric: tabular-nums; min-width: 36rem; }
+th { text-align: left; font-weight: 500; color: var(--ink-soft); padding: var(--s-3) var(--s-4) var(--s-2); border-bottom: 1px solid var(--rule); white-space: nowrap; }
+td { padding: var(--s-3) var(--s-4); border-bottom: 1px dashed var(--rule); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td.r, th.r { text-align: right; }
+.ok { color: var(--ok); } .bad { color: var(--bad); font-weight: 600; } .wait { color: var(--wait); }
+tr.gap td { background: color-mix(in srgb, var(--mark) 24%, transparent); }
+.sheet .foot { padding: var(--s-3) var(--s-4); border-top: 1px solid var(--rule); font: 400 var(--t-xs)/1.5 var(--f-mono); color: var(--ink-soft); }
+
+/* Timeline */
+.timeline { list-style: none; padding: 0; margin: var(--s-5) 0 0; display: grid; gap: 0; }
+.timeline li { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: var(--s-4); padding-block: var(--s-3); border-bottom: 1px solid var(--rule); margin: 0; }
+.timeline li:first-child { border-top: 1px solid var(--rule); }
+.timeline time { font: 600 var(--t-sm)/1.5 var(--f-mono); }
+.timeline .what { font-size: var(--t-sm); min-width: 0; }
+
+pre { margin: var(--s-4) 0 0; background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius); padding: var(--s-4); overflow-x: auto; font: 400 var(--t-xs)/1.55 var(--f-mono); color: var(--ink); }
+pre .c { color: var(--ink-soft); }
+pre .b { color: var(--bad); font-weight: 600; }
+
+.codes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2) var(--s-5); margin-top: var(--s-4); font-size: var(--t-sm); }
+.codes div { min-width: 0; }
+.codes code { display: block; font-size: var(--t-xs); }
+.codes span { color: var(--ink-soft); }
+
+.contact { margin-top: var(--s-7); background: var(--sheet); border: 1px solid var(--ink); border-radius: var(--radius); padding: var(--s-5); }
+.contact h2 { margin-top: 0; }
+.copy { display: flex; gap: var(--s-3); align-items: center; flex-wrap: wrap; margin-top: var(--s-4); }
+.copy code { font-size: var(--t-md); user-select: all; background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius); padding: .45rem .7rem; }
+.btn { font: 600 var(--t-sm)/1 var(--f-body); border: 1.5px solid var(--ink); background: var(--ink); color: var(--paper); padding: .6rem .9rem; border-radius: var(--radius); cursor: pointer; }
+.btn:hover { background: transparent; color: var(--ink); }
+.note { font-size: var(--t-sm); color: var(--ink-soft); }
+footer { margin-top: var(--s-6); font-size: var(--t-xs); color: var(--ink-soft); }
+
+@media (max-width: 560px) {
+  .codes { grid-template-columns: minmax(0, 1fr); }
+  .timeline li { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
+</style>
+
+<article class="wrap">
+  <p class="eyebrow">Field test · Google Data Manager API · 3 October 2026</p>
+  <h1>Google said 200 OK. An hour later it rejected <span class="mark">all of them</span>.</h1>
+  <p class="meta">Viktor Shataev · developer · tested on a live Google Ads account, not a test account</p>
+  <p class="lede">Since 15 June 2026, offline click conversions go to Google Ads through the Data Manager API. I sent five conversions that should fail and watched what Google said, and when.</p>
+
+  <div class="takeaways">
+    <p class="eyebrow" style="margin:0">What I learned</p>
+    <ol>
+      <li><strong>A 200 from <code>events:ingest</code> means "received", not "counted".</strong> Every upload with a bad click ID got 200 and a request ID.</li>
+      <li><strong>The verdict came 67–73 minutes later</strong>, and only because I asked for it with <code>requestStatus:retrieve</code>. Google sent no notification.</li>
+      <li><strong>Only a request-level error fails fast.</strong> A conversion action ID that doesn't exist was rejected immediately with a 404.</li>
+      <li><strong>Counts arrive as strings</strong> (<code>"recordCount": "2"</code>), and the status enum is <code>FAILED</code>, not the <code>FAILURE</code> the guide's prose uses.</li>
+    </ol>
+  </div>
+
+  <h2>What I sent</h2>
+  <p>One conversion action of type <em>Import from clicks</em>. Four upload requests, five events in total, each with a click ID that Google could not match to a real ad click: two well-formed fake GCLIDs, one plain junk string, one with a conversion value and currency, one dated 120 days back. A fifth request pointed at a conversion action that doesn't exist.</p>
+
+  <div class="sheet">
+    <div class="cap"><span>Sent vs kept</span><span>times UTC</span></div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Upload</th><th>Case</th><th class="r">Events</th><th>Immediate answer</th><th>Final verdict</th><th class="r">After</th></tr></thead>
+        <tbody>
+          <tr class="gap"><td>13:49:45</td><td>Well-formed fake GCLIDs</td><td class="r">2</td><td class="ok">200 OK</td><td class="bad">FAILED · 0 kept</td><td class="r">70 min</td></tr>
+          <tr class="gap"><td>13:49:49</td><td>Junk string as GCLID</td><td class="r">1</td><td class="ok">200 OK</td><td class="bad">FAILED · 0 kept</td><td class="r">73 min</td></tr>
+          <tr class="gap"><td>13:49:52</td><td>With value + currency</td><td class="r">1</td><td class="ok">200 OK</td><td class="bad">FAILED · 0 kept</td><td class="r">67 min</td></tr>
+          <tr class="gap"><td>13:49:56</td><td>Event 120 days old</td><td class="r">1</td><td class="ok">200 OK</td><td class="bad">FAILED · 0 kept</td><td class="r">68 min</td></tr>
+          <tr><td>13:50:17</td><td>Unknown conversion action</td><td class="r">1</td><td class="bad">404 INVALID_CONVERSION_ACTION_ID</td><td>no status (request failed)</td><td class="r">0 min</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="foot">All four accepted requests failed with <strong>PROCESSING_ERROR_REASON_INVALID_GCLID</strong>, including the 120-day-old event: the click ID is checked before the date.</div>
+  </div>
+
+  <h2>Timeline of one request</h2>
+  <ol class="timeline">
+    <li><time>13:49:45</time><span class="what"><code>POST /v1/events:ingest</code> → <span class="ok">200</span> <code>{"requestId": "8edf4943-…"}</code>. Nothing in the body hints at a problem.</span></li>
+    <li><time>14:18:43</time><span class="what">First <code>requestStatus:retrieve</code>, 29 minutes later, as Google's guide suggests → <span class="wait">PROCESSING</span>.</span></li>
+    <li><time>14:59:23</time><span class="what">Second check → <span class="bad">FAILED</span>, 2 of 2 events rejected, reason <code>INVALID_GCLID</code>.</span></li>
+  </ol>
+
+  <h2>The responses, verbatim</h2>
+  <p>The accepted upload:</p>
+<pre><span class="c">POST https://datamanager.googleapis.com/v1/events:ingest → 200</span>
+{"requestId": "8edf4943-0aa7-458e-aede-bc545357857f"}</pre>
+  <p>The same request, an hour later:</p>
+<pre><span class="c">GET /v1/requestStatus:retrieve?requestId=8edf4943-… → 200</span>
+{"requestStatusPerDestination": [{
+  "destination": {"operatingAccount": {"accountType": "GOOGLE_ADS", "accountId": "…"},
+                  "productDestinationId": "…"},
+  "requestStatus": <span class="b">"FAILED"</span>,
+  "errorInfo": {"errorCounts": [{"recordCount": "2",
+                                 "reason": <span class="b">"PROCESSING_ERROR_REASON_INVALID_GCLID"</span>}]},
+  "eventsIngestionStatus": {"recordCount": "2"}
+}]}</pre>
+  <p>The one that failed fast, which carries a request ID you can't look up later:</p>
+<pre><span class="c">POST /v1/events:ingest → 404</span>
+{"error": {"code": 404, "status": "NOT_FOUND",
+  "message": "Conversion action ID is not valid.",
+  "details": [
+    {"@type": "…ErrorInfo", "reason": "INVALID_CONVERSION_ACTION_ID",
+     "metadata": {"requestId": "t-cbb4c79b-…"}},
+    {"@type": "…BadRequest", "fieldViolations": [{
+       "field": "destinations[0].product_destination_id",
+       "reason": "INVALID_CONVERSION_ACTION_ID"}]}]}}</pre>
+
+  <h2>Check your own uploads</h2>
+  <p>If your backend uploads offline conversions, keep the <code>requestId</code> from every successful ingest and ask for its status from 30 minutes on. Google's guide suggests backing off ×1.3 up to an hour and giving up after 24 hours.</p>
+<pre><span class="c"># token for the same account that uploaded, with the datamanager scope</span>
+curl -s "https://datamanager.googleapis.com/v1/requestStatus:retrieve?requestId=$REQUEST_ID" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "x-goog-user-project: $GCP_PROJECT"</pre>
+  <p>Look at <code>requestStatus</code> per destination, then <code>errorInfo.errorCounts</code> for how many events were dropped and why. Status can't be retrieved for a request that failed outright or was sent with <code>validateOnly</code>.</p>
+
+  <h2>Reasons worth alerting on</h2>
+  <p>From Google's <code>ProcessingErrorReason</code> list, the ones that point at a problem on your side rather than a lead that never clicked an ad:</p>
+  <div class="codes">
+    <div><code>…_INVALID_GCLID</code><span>Click ID can't be decoded: truncated, re-cased or not a GCLID</span></div>
+    <div><code>…_EVENT_TOO_OLD</code><span>Conversion is past the action's window</span></div>
+    <div><code>…_DENIED_CONSENT</code> · <code>…_NO_CONSENT</code><span>Consent missing or denied for ad user data</span></div>
+    <div><code>…_DUPLICATE_GCLID</code> · <code>…_DUPLICATE_TRANSACTION_ID</code><span>Re-sending the same conversions</span></div>
+    <div><code>…_INVALID_OPERATING_ACCOUNT_FOR_CLICK</code><span>Uploading to the wrong account</span></div>
+    <div><code>…_CONVERSION_PRECEDES_CLICK</code><span>Timestamp or time-zone bug</span></div>
+  </div>
+  <p class="note"><code>CLICK_NOT_FOUND</code> on its own is often normal for leads that came from organic traffic. Watch its rate, not its presence.</p>
+
+  <h2>One oddity</h2>
+  <p>With <code>validateOnly: true</code>, a request carrying <code>conversionValue</code> and <code>currency</code> was refused with <code>destination_references: Resource not found</code>. The identical request without validateOnly returned 200. Dropping the value fields made validateOnly pass. I saw this on one account and don't know the cause; if you rely on validateOnly in CI, check it against a real upload.</p>
+
+  <section class="contact" aria-labelledby="c-h">
+    <h2 id="c-h">How do you catch this today?</h2>
+    <p>I'm building a small monitor for these failures and talking to people who upload conversions from their own backend or CRM. If an upload broke for you recently, I'd like to hear how you found out. 20 minutes, no pitch.</p>
+    <div class="copy">
+      <code id="email">40yodev@gmail.com</code>
+      <button class="btn" type="button" id="copy">Copy email</button>
+      <span class="note" id="copied" role="status" aria-live="polite"></span>
+    </div>
+  </section>
+
+  <footer>Test run on 3 October 2026 against a live Google Ads account with no campaigns. Account and conversion action IDs removed. Google Ads is a trademark of Google LLC; this page is not affiliated with Google.</footer>
+</article>
+
+<script>
+(function () {
+  var btn = document.getElementById("copy"), out = document.getElementById("copied"), email = document.getElementById("email");
+  btn.addEventListener("click", function () {
+    var text = email.textContent.trim();
+    function selectIt() { var r = document.createRange(); r.selectNodeContents(email); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); out.textContent = "Selected — press Ctrl/Cmd+C"; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { out.textContent = "Copied"; }, selectIt);
+    } else { selectIt(); }
+  });
+})();
+</script>
+
+</body>
+</html>
